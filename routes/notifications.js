@@ -7,10 +7,10 @@ const { authenticateAPIKey, validateNotificationRequest, validateTokenRequest } 
 router.use(authenticateAPIKey);
 
 /**
- * POST /api/notifications/admin-announcement
+ * POST /api/notifications/admin
  * Tüm kullanıcılara admin duyurusu gönder
  */
-router.post('/admin-announcement', validateNotificationRequest, async (req, res) => {
+router.post('/admin', validateNotificationRequest, async (req, res) => {
   try {
     const { title, message, imageUrl, data = {} } = req.body;
     
@@ -109,10 +109,10 @@ router.post('/promotion', validateNotificationRequest, async (req, res) => {
 });
 
 /**
- * POST /api/notifications/fortune-ready
+ * POST /api/notifications/fortune
  * Belirli kullanıcıya fal hazır bildirimi gönder
  */
-router.post('/fortune-ready', [validateNotificationRequest, validateTokenRequest], async (req, res) => {
+router.post('/fortune', [validateNotificationRequest, validateTokenRequest], async (req, res) => {
   try {
     const { token, fortuneType, fortuneId, data = {} } = req.body;
     
@@ -155,6 +155,55 @@ router.post('/fortune-ready', [validateNotificationRequest, validateTokenRequest
     }
   } catch (error) {
     console.error('❌ Fortune ready notification error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/notifications/user
+ * Belirli kullanıcıya özel bildirim gönder
+ */
+router.post('/user', [validateNotificationRequest, validateTokenRequest], async (req, res) => {
+  try {
+    const { token, title, message, imageUrl, data = {} } = req.body;
+    
+    console.log('👤 User notification request:', { title, message, token: token.substring(0, 20) + '...' });
+    
+    const result = await sendToToken(
+      token,
+      title,
+      message,
+      {
+        type: 'user_notification',
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        ...data
+      },
+      imageUrl
+    );
+    
+    if (result.success) {
+      res.status(200).json({
+        success: true,
+        message: 'User notification sent successfully',
+        data: {
+          messageId: result.messageId,
+          title: title,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to send user notification',
+        details: result.error
+      });
+    }
+  } catch (error) {
+    console.error('❌ User notification error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error',
