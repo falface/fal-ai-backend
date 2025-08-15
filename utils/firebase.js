@@ -2,7 +2,22 @@ const admin = require('firebase-admin');
 const path = require('path');
 
 // Firebase Admin SDK'yı initialize et
-const serviceAccount = require('../config/firebase-service-account.json');
+let serviceAccount;
+
+// Environment variable'dan JSON parse et, yoksa dosyadan oku
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    console.log('✅ Firebase service account loaded from environment variable');
+  } catch (error) {
+    console.error('❌ Error parsing Firebase service account from environment:', error);
+    process.exit(1);
+  }
+} else {
+  // Local development için dosyadan oku
+  serviceAccount = require('../config/firebase-service-account.json');
+  console.log('✅ Firebase service account loaded from file');
+}
 
 if (!admin.apps.length) {
   admin.initializeApp({
